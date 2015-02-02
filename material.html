@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="tbApp">
+    <head>
+        <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/angular_material/0.7.0/angular-material.min.css">
+    </head>
+    <body layout="column" id="app" ng-controller="boardController">
+        <md-toolbar layout="row" class="md-medium-tall">
+          <h2>Tasks board</h2>
+        </md-toolbar>
+        <md-content>
+            <div layout="row" ng-repeat="req in reqs">
+                <div flex="10">
+                    <div ng-if="req.id != -1" class="md-whiteframe-z2" layout layout-align="start center" layout-margin>
+                        <div class="md-tile-content">
+                          <h5><a href="/grs/jsf/planning/req/edit_requirement.jsf?entityId={{req.id}}">User Story {{req.id}}</a></h5>
+                          <p>{{req.name}}</p>
+                        </div>
+                    </div>                  
+                </div>
+                <div flex="30" ondrop="columnDrop(event, 'open')" ondragover="columnDragOver(event)" layout layout-align="start center" layout-wrap>
+                    <div ng-repeat="task in req.open" id="task_{{task.id}}" ondragstart="taskDragStart(event)" draggable="true" flex="25"
+                      style="background-color: {{getBgrColor(task)}};height:150px;" class="md-whiteframe-z2" layout layout-align="start center" layout-margin>
+                        <div class="md-tile-left">
+                            <div ng-repeat="owner in task.owners">
+                                <img ng-src="https://robohash.org/{{owner}}?size=48x48" class="face" alt="{{owner}}" title="{{owner}}"/>
+                            </div>
+                        </div>                      
+                        <div class="md-tile-content" style="font-size:10px;">
+                            <h5><a href="/grs/jsf/planning/task/edit_task.jsf?entityId={{task.id}}">{{task.id}}</a></h5>
+                            <small>{{task.name}}</small>
+                        </div>
+                    </div>
+                </div>
+                <div flex="30" ondrop="columnDrop(event, 'in progress')" ondragover="columnDragOver(event)" layout="row" layout-wrap>
+                    <div ng-repeat="task in req.inProgress" id="task_{{task.id}}" ondragstart="taskDragStart(event)" draggable="true" flex="33"
+                      style="background-color: {{getBgrColor(task)}};height:150px;" class="md-whiteframe-z2" layout layout-align="start center" layout-margin>
+                        <div class="md-tile-left">
+                            <div ng-repeat="owner in task.owners">
+                                <img ng-src="https://robohash.org/{{owner}}?size=48x48" class="face" alt="{{owner}}" title="{{owner}}"/>
+                            </div>
+                        </div>                      
+                        <div class="md-tile-content" style="font-size:10px;">
+                            <h5><a href="/grs/jsf/planning/task/edit_task.jsf?entityId={{task.id}}">{{task.id}}</a></h5>
+                              {{task.name}}
+                        </div>
+                    </div>
+                </div>
+                <div flex="30" ondrop="columnDrop(event, 'success')" ondragover="columnDragOver(event)" layout="row" layout-wrap hide-sm>
+                    <div ng-repeat="task in req.success" id="task_{{task.id}}" ondragstart="taskDragStart(event)" draggable="true" flex="33"
+                      style="background-color: {{getBgrColor(task)}};height:150px;" class="md-whiteframe-z2" layout layout-align="start center" layout-margin>
+                        <div class="md-tile-left">
+                            <div ng-repeat="owner in task.owners">
+                                <img ng-src="https://robohash.org/{{owner}}?size=48x48" class="face" alt="{{owner}}" title="{{owner}}"/>
+                            </div>
+                        </div>                      
+                        <div class="md-tile-content" style="font-size:10px;">
+                            <h5><a href="/grs/jsf/planning/task/edit_task.jsf?entityId={{task.id}}">{{task.id}}</a></h5>
+                              {{task.name}}
+                        </div>
+                    </div>                   
+                </div>
+            </div>
+        </md-content>      
+        <!--div id="app" ng-controller="boardController" style="margin: 30px;">
+
+            <a href="/grs/jsf/planning/iteration/edit_iteration.jsf?entityId={{iterationId}}">Sprint {{iterationId}}</a>
+
+            <table class="table">
+              <thead>
+                <th style="width: 10%"></th>
+                <th style="width: 30%">Open</th>
+                <th style="width: 20%">In Progress</th>
+                <th style="width: 30%">Closed</th>
+                <th style="width: 10%">Canceled</th>
+              </thead>
+              <tbody>
+                <tr ng-repeat="req in reqs">
+                  <td>
+                    <span ng-if="req.id != -1">
+                      <a href="/grs/jsf/planning/req/edit_requirement.jsf?entityId={{req.id}}">User Story {{req.id}}</a> - {{req.name}}
+                    </span>
+                  </td>
+                  <td ondrop="columnDrop(event, 'open')" ondragover="columnDragOver(event)">
+                    <div class="row" style="margin: 0px">
+                      <div class="col-xs-4" ng-repeat="task in req.open" style="padding: 0px;">
+                        <div ng-include src="'inline-taskboardBox.html'"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td ondrop="columnDrop(event, 'in progress')" ondragover="columnDragOver(event)">
+                    <div class="row" style="margin: 0px">
+                      <div class="col-xs-6" ng-repeat="task in req.inProgress" style="padding: 0px;">
+                        <div ng-include src="'inline-taskboardBox.html'"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td ondrop="columnDrop(event, 'success')" ondragover="columnDragOver(event)">
+                    <div class="row" style="margin: 0px">
+                      <div class="col-xs-4" ng-repeat="task in req.success" style="padding: 0px;">
+                        <div ng-include src="'inline-taskboardBox.html'"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td ondrop="columnDrop(event, 'canceled')" ondragover="columnDragOver(event)">
+                    <div class="row" style="margin: 0px">
+                      <div class="col-xs-12" ng-repeat="task in req.canceled" style="padding: 0px;">
+                        <div ng-include src="'inline-taskboardBox.html'"></div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+
+        </div-->
+        <!-- ng-templates -->
+
+        <script type="text/ng-template" id="inline-taskboardBox.html">
+          <div class="taskboardBox" title="{{task.name}}" style="background-color: {{getBgrColor(task)}};" id="task_{{task.id}}" ondragstart="taskDragStart(event)" draggable="true" >
+            <div class="row" style="margin: 0px;">
+              <div class="col-xs-6">
+                <a href="/grs/jsf/planning/task/edit_task.jsf?entityId={{task.id}}">{{task.id}}</a>
+              </div>
+              <div class="col-xs-6">
+                <div ng-repeat="owner in task.owners">
+                  <small>{{owner}}</small>
+                </div>
+              </div>
+              <div class="col-xs-12" style="word-wrap:break-word;padding: 5px;max-height:55px;overflow:hidden;">
+                {{task.name}}
+              </div>
+
+              <div class="col-xs-12" ng-if="isNotClosed(task)">
+                <small>Planned: {{task.plannedTime}}</small>
+              </div>
+              <div class="col-xs-12" ng-if="isNotClosed(task)">
+                <small>Remaining: {{task.remainingTime}}</small>
+              </div>        
+              <div class="col-xs-6" ng-if="task.spinner == true">
+                <div class="spinner"></div>
+              </div>
+            </div>
+          </div>
+        </script>
+
+        <!-- Angular Material Dependencies -->
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script src="//cdn.jsdelivr.net/hammerjs/2.0.4/hammer.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-animate.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-aria.min.js"></script>
+
+        <script src="//ajax.googleapis.com/ajax/libs/angular_material/0.7.0/angular-material.min.js"></script>
+
+        <script type="text/javascript">
+            function taskDragStart(ev) {
+              ev.dataTransfer.setData("text/html", ev.target.id);
+            }
+
+            function columnDragOver(ev) {
+                  ev.preventDefault();
+            }
+
+            function columnDrop(ev, newStatus) {
+              ev.preventDefault();
+              
+              var root = angular.element('#app');
+              var scope = root.scope();
+
+              var data = ev.dataTransfer.getData("text/html");
+              var element = angular.element('#'+ data);
+              var task_scope = element.scope();
+
+              var task = task_scope.task;
+              if (task.status != newStatus)
+              {
+                jQuery.get("/grs/api/v1/tasks/" + task.id)
+                  .success(function(response) {
+                    
+                    response.status = newStatus;
+                    response.creationDate = null;
+                    response.modificationDate = null;
+                      jQuery.ajax({
+                        url: "/grs/api/v1/tasks/" + task.id,
+                        type: 'PUT',
+                        data: JSON.stringify(response),
+                        dataType: 'json',
+                        contentType:"application/json; charset=utf-8",
+                        success: function(data)
+                        {
+                          scope.$apply(function() {
+                            task.spinner = false;
+                          });
+                        }
+                    });
+                });
+                scope.$apply(function() {
+                  task.spinner = true;
+
+                  var req = task_scope.$parent.req;
+              
+                  var list = null;
+                  if (task.status == "open") { list = req.open; }
+                  if (task.status == "in progress") { list = req.inProgress; }
+                  if (task.status == "success") { list = req.success; }
+                  if (task.status == "canceled") { list = req.canceled; }
+
+                  var index = list.indexOf(task);
+                  if (index >= 0) {
+                    list.splice(index, 1);
+                  }
+            
+                  task.status = newStatus;
+                
+                  if (task.status == "open") { req.open.push(task); }
+                  if (task.status == "in progress") { req.inProgress.push(task); }
+                  if (task.status == "success") { req.success.push(task); }
+                  if (task.status == "canceled") { req.canceled.push(task); }
+                });
+              }
+            }
+
+            var app = angular.module('tbApp', ['ngMaterial']);
+            app.controller('boardController', ['$scope', '$http', function($scope, $http) {
+             
+                var queryDict = {};
+                location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]});
+                var iterationId = queryDict['iterationId'];
+                $scope.iterationId = iterationId;
+
+                $scope.isNotClosed = function(task) { 
+                  return jQuery.grep(["open", "in progress"], function(item) {
+                    return item == task.status;
+                  }).length == 1;
+                };
+
+                $scope.getBgrColor = function(task) {
+                  switch(task.status) {
+                    case "open":
+                        return "#FFEB80";
+                    case "in progress":
+                        return "#C3E6FC";
+                    case "success":
+                        return "#BFFF80";
+                    case "canceled":
+                        return "#CCCCCC";
+                    default: 
+                      return "#FFEB80"; 
+                  }
+                };
+
+                $http.get("/grs/api/v1/tasks?limit=150&iterationIds=" + iterationId).success( function(response) {             
+                    $scope.reqs = [];
+
+                    var noreq = { id: -1, open: [], inProgress: [], success: [], canceled: [] };
+                    var anyWithoutReq = false;  
+                    var reqIds = "";
+
+                    for(var i = 0; i < response.tasks.length; i++) {
+                        var task = response.tasks[i];
+
+                        var req = null;
+                    
+                        if (task.relation == "requirement") {
+                            for(var j = 0; j < $scope.reqs.length; j++) {
+                                var r = $scope.reqs[j];
+                                if (r.id == task.relationId) {
+                                    req = r;    
+                                }
+                            }
+                        } else {
+                            req = noreq;
+                            anyWithoutReq = true;
+                        }
+                        if (req == null) {
+                            req = { id: task.relationId, name: "(loading)", open: [], inProgress: [], success: [], canceled: [] };
+                            $scope.reqs.push(req);
+                            reqIds = reqIds + req.id + ",";
+                        }
+                        if (task.status == "open") { req.open.push(task); }
+                        if (task.status == "in progress") { req.inProgress.push(task); }
+                        if (task.status == "success") { req.success.push(task); }
+                        if (task.status == "canceled") { req.canceled.push(task); }
+                    }
+                    if (anyWithoutReq) {
+                        $scope.reqs.push(noreq);
+                    }
+
+                    $http.get("/grs/api/v1/requirements?verbose=false&ids=" + reqIds).success( function(reqResponse) {
+                        for(var i = 0; i < $scope.reqs.length; i++) {
+                            for(var j = 0; j < reqResponse.requirements.length; j++) {
+                                if ($scope.reqs[i].id == reqResponse.requirements[j].id) {
+                                    $scope.reqs[i].name = reqResponse.requirements[j].name;
+                                }
+                            } 
+                        } 
+                    });
+                });
+            }]);
+        </script>    
+    </body>
+</html>
