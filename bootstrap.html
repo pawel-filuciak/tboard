@@ -68,17 +68,17 @@
                     </div>
                 </div>
                 <div class="col-md-3 dropArea" ondrop="columnDrop(event, 'open')" ondragover="columnDragOver(event)">
-                  <div class="col-sm-6 col-md-5" ng-repeat="task in req.open">
+                  <div class="col-sm-6 col-md-6" ng-repeat="task in req.open">
                     <div ng-include src="'inline-taskPanel.html'"></div>
                   </div>
                 </div>                
                 <div class="col-md-3 dropArea" ondrop="columnDrop(event, 'in progress')" ondragover="columnDragOver(event)">
-                  <div class="col-sm-6 col-md-5" ng-repeat="task in req.inProgress">
+                  <div class="col-sm-6 col-md-6" ng-repeat="task in req.inProgress">
                     <div ng-include src="'inline-taskPanel.html'"></div>
                   </div>
                 </div>
                 <div class="col-md-3 dropArea" ondrop="columnDrop(event, 'success')" ondragover="columnDragOver(event)">
-                  <div class="col-sm-6 col-md-5" ng-repeat="task in req.success">
+                  <div class="col-sm-6 col-md-6" ng-repeat="task in req.success">
                     <div ng-include src="'inline-taskPanel.html'"></div>
                   </div>
                 </div>
@@ -97,7 +97,7 @@
               </div>
             </div>
             <div class="panel-body panel-padding">
-              <small class="text-left">{{task.name}}</small>
+              <small class="text-left" title="{{task.name}}">{{task.name}}</small>
             </div>
             <div class="panel-footer panel-padding clearfix">
               <div class="pull-left">
