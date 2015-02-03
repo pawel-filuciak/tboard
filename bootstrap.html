@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="tbApp">
+    <head>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
+        <style type="text/css">
+          .row.reqRow {
+            border-bottom: 1px solid #eee;
+            margin: 10px;
+          }
+          .dropArea {
+            min-height: 200px;
+            border: 2px solid transparent;
+          }
+          .dropArea.active {
+            border: 2px dashed #eee;
+          }
+          .panel > .panel-heading {
+            height: 35px;
+          }
+          .panel > .panel-padding {
+            padding: 5px 5px !important;
+          }
+          .panel > .panel-heading.panel-padding {
+            padding: 0px 0px !important;
+          }
+          .panel > .panel-heading > .link {
+            padding-top: 7px;
+            padding-left: 5px;
+          }
+          .panel > .panel-footer.panel-padding {
+            padding: 2px 5px !important;
+          }
+          .panel > .panel-body {
+            height: 75px;
+            overflow: hidden;
+          }
+          .panel > .panel-body > small{
+            font-size: 10px;
+          }          
+          .badge-vh {
+            background: #D50000;
+          }
+          .badge-h {
+            background: #FF8A80;
+          }
+          .badge-m {
+          }
+          .badge-l {
+            background: #CFD8DC;
+          }
+          .badge-vl {
+            background: #ECEFF1
+          }
+        </style>  
+    </head>
+    <body id="app" ng-controller="boardController">
+        <div class="page-header">
+          <h4><a href="/grs/jsf/planning/iteration/edit_iteration.jsf?entityId={{iterationId}}">Sprint {{iterationId}}</a></h4>
+        </div>
+        <div class="container-fluid">
+            <div class="row reqRow" ng-repeat="req in reqs">
+                <div class="col-md-2">
+                    <div ng-if="req.id != -1">
+                        <h5><a href="/grs/jsf/planning/req/edit_requirement.jsf?entityId={{req.id}}">User Story {{req.id}}</a></h5>
+                        <p>{{req.name}}</p>
+                    </div>
+                </div>
+                <div class="col-md-3 dropArea" ondrop="columnDrop(event, 'open')" ondragover="columnDragOver(event)">
+                  <div class="col-sm-6 col-md-5" ng-repeat="task in req.open">
+                    <div ng-include src="'inline-taskPanel.html'"></div>
+                  </div>
+                </div>                
+                <div class="col-md-3 dropArea" ondrop="columnDrop(event, 'in progress')" ondragover="columnDragOver(event)">
+                  <div class="col-sm-6 col-md-5" ng-repeat="task in req.inProgress">
+                    <div ng-include src="'inline-taskPanel.html'"></div>
+                  </div>
+                </div>
+                <div class="col-md-3 dropArea" ondrop="columnDrop(event, 'success')" ondragover="columnDragOver(event)">
+                  <div class="col-sm-6 col-md-5" ng-repeat="task in req.success">
+                    <div ng-include src="'inline-taskPanel.html'"></div>
+                  </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ng-templates -->
+        <script type="text/ng-template" id="inline-taskPanel.html">
+          <div class="panel {{getPanelClass(task)}}"  id="task_{{task.id}}" ondragstart="taskDragStart(event)" draggable="true">
+            <div class="panel-heading clearfix panel-padding">
+              <div class="pull-left link"><a href="/grs/jsf/planning/task/edit_task.jsf?entityId={{task.id}}">{{task.id}}</a></div>
+              <div class="pull-right">
+                  <div ng-repeat="owner in task.owners">
+                      <img ng-src="https://robohash.org/{{owner}}?size=32x32" class="face" alt="{{owner}}" title="{{owner}}"/>
+                  </div>
+              </div>
+            </div>
+            <div class="panel-body panel-padding">
+              <small class="text-left">{{task.name}}</small>
+            </div>
+            <div class="panel-footer panel-padding clearfix">
+              <div class="pull-left">
+                <div ng-if="task.spinner == true" class="spinner"></div>
+                <span title="Priority - {{task.priority}}" class="badge {{getPriorityClass(task)}}">P</span>
+              </div>
+              <div class="pull-right">
+                <span title="Planned Time" class="label label-default" ng-if="isNotClosed(task)">{{task.plannedTime}}</span>
+                <span title="Remaining Time" class="label label-primary" ng-if="isNotClosed(task)">{{task.remainingTime}}</span>
+              </div>
+            </div>
+          </div>
+        </script>
+
+        <!-- Angular Material Dependencies -->
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-animate.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-aria.min.js"></script>
+
+        <script type="text/javascript">
+
+            function taskDragStart(ev) {
+              ev.dataTransfer.setData("text/html", ev.target.id);
+            }
+            function columnDragLeave(ev) {
+              jQuery(ev.currentTarget).removeClass("active");
+            }
+            function columnDragOver(ev) {
+              ev.preventDefault();
+              jQuery(ev.currentTarget).addClass("active");
+              ev.currentTarget.addEventListener('dragleave', columnDragLeave, false);
+            }
+
+            function columnDrop(ev, newStatus) {
+              ev.preventDefault();
+              jQuery(ev.currentTarget).removeClass("active");
+
+              var root = angular.element('#app');
+              var scope = root.scope();
+
+              var data = ev.dataTransfer.getData("text/html");
+              var element = angular.element('#'+ data);
+              var task_scope = element.scope();
+
+              var task = task_scope.task;
+              if (task.status != newStatus)
+              {
+                jQuery.get("/grs/api/v1/tasks/" + task.id)
+                  .success(function(response) {
+                    
+                    response.status = newStatus;
+                    response.creationDate = null;
+                    response.modificationDate = null;
+                      jQuery.ajax({
+                        url: "/grs/api/v1/tasks/" + task.id,
+                        type: 'PUT',
+                        data: JSON.stringify(response),
+                        dataType: 'json',
+                        contentType:"application/json; charset=utf-8",
+                        success: function(data)
+                        {
+                          scope.$apply(function() {
+                            task.spinner = false;
+                          });
+                        }
+                    });
+                });
+                scope.$apply(function() {
+                  task.spinner = true;
+
+                  var req = task_scope.$parent.req;
+              
+                  var list = null;
+                  if (task.status == "open") { list = req.open; }
+                  if (task.status == "in progress") { list = req.inProgress; }
+                  if (task.status == "success") { list = req.success; }
+                  if (task.status == "canceled") { list = req.canceled; }
+
+                  var index = list.indexOf(task);
+                  if (index >= 0) {
+                    list.splice(index, 1);
+                  }
+            
+                  task.status = newStatus;
+                
+                  if (task.status == "open") { req.open.push(task); }
+                  if (task.status == "in progress") { req.inProgress.push(task); }
+                  if (task.status == "success") { req.success.push(task); }
+                  if (task.status == "canceled") { req.canceled.push(task); }
+                });
+              }
+            }
+
+            var app = angular.module('tbApp', []);
+            app.controller('boardController', ['$scope', '$http', function($scope, $http) {
+             
+                var queryDict = {};
+                location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]});
+                var iterationId = queryDict['iterationId'];
+                $scope.iterationId = iterationId;
+
+                $scope.isNotClosed = function(task) { 
+                  return jQuery.grep(["open", "in progress"], function(item) {
+                    return item == task.status;
+                  }).length == 1;
+                };
+
+                $scope.getBgrColor = function(task) {
+                  switch(task.status) {
+                    case "open":
+                        return "#FFEB80";
+                    case "in progress":
+                        return "#C3E6FC";
+                    case "success":
+                        return "#BFFF80";
+                    case "canceled":
+                        return "#CCCCCC";
+                    default: 
+                      return "#FFEB80"; 
+                  }
+                };
+
+                $scope.getPanelClass = function(task) {
+                  switch(task.status) {
+                    case "open":
+                        return "panel-default";
+                    case "in progress":
+                        return "panel-info";
+                    case "success":
+                        return "panel-success";
+                    case "canceled":
+                        return "panel-warning";
+                    default: 
+                      return "#FFEB80"; 
+                  }
+                };
+
+                $scope.getPriorityClass = function(task) {
+                  switch(task.priority) {
+                    case "Very high":
+                        return "badge-vh";
+                    case "High":
+                        return "badge-h";
+                    case "Medium":
+                        return "badge-m";
+                    case "Low":
+                        return "badge-l";
+                    case "Very low":
+                        return "badge-vl";
+                    default: 
+                      return "badge-m"; 
+                  }
+                };
+
+                $http.get("/grs/api/v1/tasks?limit=150&iterationIds=" + iterationId).success( function(response) {             
+                    $scope.reqs = [];
+
+                    var noreq = { id: -1, open: [], inProgress: [], success: [], canceled: [] };
+                    var anyWithoutReq = false;  
+                    var reqIds = "";
+
+                    for(var i = 0; i < response.tasks.length; i++) {
+                        var task = response.tasks[i];
+
+                        var req = null;
+                    
+                        if (task.relation == "requirement") {
+                            for(var j = 0; j < $scope.reqs.length; j++) {
+                                var r = $scope.reqs[j];
+                                if (r.id == task.relationId) {
+                                    req = r;    
+                                }
+                            }
+                        } else {
+                            req = noreq;
+                            anyWithoutReq = true;
+                        }
+                        if (req == null) {
+                            req = { id: task.relationId, name: "(loading)", open: [], inProgress: [], success: [], canceled: [] };
+                            $scope.reqs.push(req);
+                            reqIds = reqIds + req.id + ",";
+                        }
+                        if (task.status == "open") { req.open.push(task); }
+                        if (task.status == "in progress") { req.inProgress.push(task); }
+                        if (task.status == "success") { req.success.push(task); }
+                        if (task.status == "canceled") { req.canceled.push(task); }
+                    }
+                    if (anyWithoutReq) {
+                        $scope.reqs.push(noreq);
+                    }
+
+                    $http.get("/grs/api/v1/requirements?verbose=false&ids=" + reqIds).success( function(reqResponse) {
+                        for(var i = 0; i < $scope.reqs.length; i++) {
+                            for(var j = 0; j < reqResponse.requirements.length; j++) {
+                                if ($scope.reqs[i].id == reqResponse.requirements[j].id) {
+                                    $scope.reqs[i].name = reqResponse.requirements[j].name;
+                                }
+                            } 
+                        } 
+                    });
+                });
+            }]);
+        </script>    
+    </body>
+</html>
