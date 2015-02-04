@@ -12,9 +12,16 @@
           .dropArea {
             min-height: 200px;
             border: 2px solid transparent;
+            padding: 5px !important;
           }
           .dropArea.active {
             border: 2px dashed #eee;
+          }
+          .panelWrapper {
+            padding: 0px !important;
+          }
+          .panel {
+            margin: 3px !important;
           }
           .panel > .panel-heading {
             height: 35px;
@@ -25,9 +32,9 @@
           .panel > .panel-heading.panel-padding {
             padding: 0px 0px !important;
           }
-          .panel > .panel-heading > .link {
-            padding-top: 7px;
-            padding-left: 5px;
+          .panel .link {
+            padding-top: 3px;
+            padding-left: 3px;
           }
           .panel > .panel-footer.panel-padding {
             padding: 2px 5px !important;
@@ -53,6 +60,11 @@
           .badge-vl {
             background: #ECEFF1
           }
+          .robot {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+          }
         </style>  
     </head>
     <body id="app" ng-controller="boardController">
@@ -61,24 +73,24 @@
         </div>
         <div class="container-fluid">
             <div class="row reqRow" ng-repeat="req in reqs">
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <div ng-if="req.id != -1">
                         <h5><a href="/grs/jsf/planning/req/edit_requirement.jsf?entityId={{req.id}}">User Story {{req.id}}</a></h5>
                         <p>{{req.name}}</p>
                     </div>
                 </div>
-                <div class="col-md-3 dropArea" ondrop="columnDrop(event, 'open')" ondragover="columnDragOver(event)">
-                  <div class="col-sm-6 col-md-6" ng-repeat="task in req.open">
+                <div class="col-md-4 dropArea" ondrop="columnDrop(event, 'open')" ondragover="columnDragOver(event)">
+                  <div class="col-sm-6 col-md-6 col-lg-4 panelWrapper" ng-repeat="task in req.open">
                     <div ng-include src="'inline-taskPanel.html'"></div>
                   </div>
                 </div>                
-                <div class="col-md-3 dropArea" ondrop="columnDrop(event, 'in progress')" ondragover="columnDragOver(event)">
-                  <div class="col-sm-6 col-md-6" ng-repeat="task in req.inProgress">
+                <div class="col-md-4 dropArea" ondrop="columnDrop(event, 'in progress')" ondragover="columnDragOver(event)">
+                  <div class="col-sm-6 col-md-6 col-lg-4 panelWrapper" ng-repeat="task in req.inProgress">
                     <div ng-include src="'inline-taskPanel.html'"></div>
                   </div>
                 </div>
                 <div class="col-md-3 dropArea" ondrop="columnDrop(event, 'success')" ondragover="columnDragOver(event)">
-                  <div class="col-sm-6 col-md-6" ng-repeat="task in req.success">
+                  <div class="col-sm-6 col-md-6 col-lg-4 panelWrapper" ng-repeat="task in req.success">
                     <div ng-include src="'inline-taskPanel.html'"></div>
                   </div>
                 </div>
@@ -87,16 +99,16 @@
 
         <!-- ng-templates -->
         <script type="text/ng-template" id="inline-taskPanel.html">
-          <div class="panel {{getPanelClass(task)}}"  id="task_{{task.id}}" ondragstart="taskDragStart(event)" draggable="true">
-            <div class="panel-heading clearfix panel-padding">
-              <div class="pull-left link"><a href="/grs/jsf/planning/task/edit_task.jsf?entityId={{task.id}}">{{task.id}}</a></div>
+          <div class="panel {{getPanelClass(task)}}" style="{{getBgrColor(task)}}" id="task_{{task.id}}" ondragstart="taskDragStart(event)" draggable="true">
+            <div class="clearfix">
+              <div class="pull-left link"><a href="/grs/jsf/planning/task/edit_task.jsf?entityId={{task.id}}"><small>{{task.id}}</small></a></div>
               <div class="pull-right">
-                  <div ng-repeat="owner in task.owners">
-                      <img ng-src="https://robohash.org/{{owner}}?size=32x32" class="face" alt="{{owner}}" title="{{owner}}"/>
+                  <div ng-repeat="owner in task.owners" class="robot">
+                      <img ng-src="https://robohash.org/{{owner}}?size=35x35" class="face" alt="{{owner}}" title="{{owner}}"/>
                   </div>
               </div>
             </div>
-            <div class="panel-body panel-padding">
+            <div class="panel-body panel-padding" >
               <small class="text-left" title="{{task.name}}">{{task.name}}</small>
             </div>
             <div class="panel-footer panel-padding clearfix">
@@ -211,12 +223,10 @@
 
                 $scope.getBgrColor = function(task) {
                   switch(task.status) {
-                    case "open":
-                        return "#FFEB80";
                     case "in progress":
-                        return "#C3E6FC";
+                        return "background: #bce8f1";
                     case "success":
-                        return "#BFFF80";
+                        return "background: #d6e9c6";
                     case "canceled":
                         return "#CCCCCC";
                     default: 
