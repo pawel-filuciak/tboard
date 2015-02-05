@@ -68,10 +68,60 @@
         </style>  
     </head>
     <body id="app" ng-controller="boardController">
-        <div class="page-header">
-          <h4><a href="/grs/jsf/planning/iteration/edit_iteration.jsf?entityId={{iterationId}}">Sprint {{iterationId}}</a></h4>
-        </div>
         <div class="container-fluid">
+          <table class="table">
+            <caption><h4><a href="/grs/jsf/planning/iteration/edit_iteration.jsf?entityId={{iterationId}}">Sprint {{iterationId}}</a></h4></caption>
+            <colgroup>
+              <col width="40%"/>
+              <col width="40%"/>
+              <col width="20%"/>
+            </colgroup>
+            <tbody>
+              <tr ng-repeat="req in reqs">
+                <td>
+                  <div class="col-sm-12 col-md-12 col-lg-12 panelWrapper" ng-if="req.id != -1">
+                    <div class="panel panel-primary">
+                      <div class="clearfix">
+                        <div class="pull-left link"><a href="/grs/jsf/planning/req/edit_requirement.jsf?entityId={{req.id}}"><small>User Story {{req.id}}</small></a></div>
+                      </div>
+                      <div class="panel-body panel-padding" >
+                        <small class="text-left" title="{{req.name}}">{{req.name}}</small>
+                      </div>
+                      <div class="panel-footer panel-padding clearfix">
+                        <div class="pull-left">
+                          
+                        </div>
+                        <div class="pull-right">
+                          <span title="Story Points - {{req.storyPoints}}" class="label label-danger">{{req.storyPoints}}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-12 dropArea" ondrop="columnDrop(event, 'open')" ondragover="columnDragOver(event)">
+                    <div class="col-sm-6 col-md-6 col-lg-4 panelWrapper" ng-repeat="task in req.open">
+                      <div ng-include src="'inline-taskPanel.html'"></div>
+                    </div>
+                  </div>                                  
+                </td>
+                <td>
+                  <div class="col-md-12 dropArea" ondrop="columnDrop(event, 'in progress')" ondragover="columnDragOver(event)">
+                    <div class="col-sm-6 col-md-6 col-lg-4 panelWrapper" ng-repeat="task in req.inProgress">
+                      <div ng-include src="'inline-taskPanel.html'"></div>
+                    </div>
+                  </div>                  
+                </td>
+                <td>
+                  <div class="col-md-12 dropArea" ondrop="columnDrop(event, 'success')" ondragover="columnDragOver(event)">
+                    <div class="col-sm-6 col-md-6 col-lg-6 panelWrapper" ng-repeat="task in req.success">
+                      <div ng-include src="'inline-taskPanel.html'"></div>
+                    </div>
+                  </div>                  
+                </td>                                
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!--div class="container-fluid">
             <div class="row reqRow" ng-repeat="req in reqs">
                 <div class="col-md-1">
                     <div ng-if="req.id != -1">
@@ -95,13 +145,13 @@
                   </div>
                 </div>
             </div>
-        </div>
+        </div-->
 
         <!-- ng-templates -->
         <script type="text/ng-template" id="inline-taskPanel.html">
           <div class="panel {{getPanelClass(task)}}" style="{{getBgrColor(task)}}" id="task_{{task.id}}" ondragstart="taskDragStart(event)" draggable="true">
             <div class="clearfix">
-              <div class="pull-left link"><a href="/grs/jsf/planning/task/edit_task.jsf?entityId={{task.id}}"><small>{{task.id}}</small></a></div>
+              <div class="pull-left link"><a href="/grs/jsf/planning/task/edit_task.jsf?entityId={{task.id}}"><small>Task {{task.id}}</small></a></div>
               <div class="pull-right">
                   <div ng-repeat="owner in task.owners" class="robot">
                       <img ng-src="https://robohash.org/{{owner}}?size=35x35" class="face" alt="{{owner}}" title="{{owner}}"/>
@@ -308,6 +358,8 @@
                             for(var j = 0; j < reqResponse.requirements.length; j++) {
                                 if ($scope.reqs[i].id == reqResponse.requirements[j].id) {
                                     $scope.reqs[i].name = reqResponse.requirements[j].name;
+                                    $scope.reqs[i].storyPoints = reqResponse.requirements[j].storyPoints;
+                                    $scope.reqs[i].priority = reqResponse.requirements[j].rank;
                                 }
                             } 
                         } 
