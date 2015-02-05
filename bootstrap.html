@@ -5,6 +5,40 @@
 
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
         <style type="text/css">
+          .capacityBar {
+            height: 22px;
+            width: 260px;
+            font-weight: normal;
+          }        
+          .capacityBar .bar {
+            height: 20px;
+            width: 200px;
+            background-color: white;
+            background-image: url("/grs/resources/default/5_1_2/css/images/planning/capacity-bar-free.png");
+            border: solid 1px #c0c0c0;
+            margin-right: 5px;
+            text-align: center;
+            line-height: 20px;
+            cursor: help;
+          }          
+          .capacityBar .txt, .capacityBar .bar {
+            float: left;
+          } 
+          .capacityBar .bar .CAPACITY_BAR_ELAPSED {
+            background-image: url("/grs/resources/default/5_1_2/css/images/planning/capacity-bar-elapsed.png");
+          }
+          .capacityBar .bar .CAPACITY_BAR_NOT_FINISHED {
+            background-image: url("/grs/resources/default/5_1_2/css/images/planning/capacity-bar-scheduled.png");
+          }          
+          .capacityBar .bar span {
+            display: block;
+            float: left;
+            overflow: hidden;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            cursor: help;
+          }                  
           .row.reqRow {
             border-bottom: 1px solid #eee;
             margin: 10px;
@@ -119,7 +153,7 @@
     <body id="app" ng-controller="boardController">
         <div class="container-fluid">
           <table class="table table-condensed">
-            <caption><h4><a href="/grs/jsf/planning/iteration/edit_iteration.jsf?entityId={{iterationId}}">Sprint {{iterationId}}</a></h4></caption>
+            <caption><h4><a href="/grs/jsf/planning/iteration/edit_iteration.jsf?entityId={{iterationId}}">Sprint {{iterationId}}</a></h4><div id="capacityBar"/></caption>
             <colgroup>
               <col width="40%"/>
               <col width="40%"/>
@@ -295,6 +329,8 @@
                 location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]});
                 var iterationId = queryDict['iterationId'];
                 $scope.iterationId = iterationId;
+
+                jQuery("#capacityBar").load("/grs/jsf/planning/iteration/edit_iteration.jsf?entityId=" + iterationId + " div.capacityBar");
 
                 $scope.isNotClosed = function(task) { 
                   return jQuery.grep(["open", "in progress"], function(item) {
