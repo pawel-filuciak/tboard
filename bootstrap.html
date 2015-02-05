@@ -14,9 +14,46 @@
             border: 2px solid transparent;
             padding: 5px !important;
           }
+          .full {
+            position: absolute;
+            top: 0px;
+            bottom: 0px;
+            left: 0;
+            right: 0;
+          }          
+          .top {
+            position: absolute;
+            top: 0;
+            bottom: 50%;
+            right: 0;
+            left: 0;            
+          }
+          .bottom {
+            position: absolute;
+            top: 50%;
+            bottom: 0;
+            right: 0;
+            left: 0;            
+          }
+          .dropArea.full {
+            top: 2px;
+            bottom: 2px;
+          }          
           .dropArea.active {
             border: 2px dashed #eee;
           }
+          .dropArea.active.success {
+            background: #dff0d8;
+            border-color: #d6e9c6;
+          }
+          .dropArea.active.inProgress {
+            background: #d9edf7;
+            border-color: #bce8f1;
+          } 
+          .dropArea.active.canceled {
+            background: #fcf8e3;
+            border-color: #faebcc;
+          }           
           .panelWrapper {
             padding: 0px !important;
           }
@@ -65,11 +102,23 @@
             top: -4px;
             right: -4px;
           }
+          table tbody tr td {
+            position: relative;
+          }
+          .success .panel {
+            background: #dff0d8;
+          }
+          .inProgress .panel {
+            background: #d9edf7;
+          } 
+          .canceled .panel {
+            background: #fcf8e3;
+          }                             
         </style>  
     </head>
     <body id="app" ng-controller="boardController">
         <div class="container-fluid">
-          <table class="table">
+          <table class="table table-condensed">
             <caption><h4><a href="/grs/jsf/planning/iteration/edit_iteration.jsf?entityId={{iterationId}}">Sprint {{iterationId}}</a></h4></caption>
             <colgroup>
               <col width="40%"/>
@@ -92,7 +141,7 @@
                           
                         </div>
                         <div class="pull-right">
-                          <span title="Story Points - {{req.storyPoints}}" class="label label-danger">{{req.storyPoints}}</span>
+                          <span title="Story Points - {{req.storyPoints}}" class="label label-primary">{{req.storyPoints}}</span>
                         </div>
                       </div>
                     </div>
@@ -104,52 +153,34 @@
                   </div>                                  
                 </td>
                 <td>
-                  <div class="col-md-12 dropArea" ondrop="columnDrop(event, 'in progress')" ondragover="columnDragOver(event)">
+                  <div class="col-md-12 dropArea full inProgress" ondrop="columnDrop(event, 'in progress')" ondragover="columnDragOver(event)">
                     <div class="col-sm-6 col-md-6 col-lg-4 panelWrapper" ng-repeat="task in req.inProgress">
                       <div ng-include src="'inline-taskPanel.html'"></div>
                     </div>
                   </div>                  
                 </td>
                 <td>
-                  <div class="col-md-12 dropArea" ondrop="columnDrop(event, 'success')" ondragover="columnDragOver(event)">
-                    <div class="col-sm-6 col-md-6 col-lg-6 panelWrapper" ng-repeat="task in req.success">
-                      <div ng-include src="'inline-taskPanel.html'"></div>
+                  <div class="col-md-12 full">
+                    <div class="dropArea success top" ondrop="columnDrop(event, 'success')" ondragover="columnDragOver(event)">
+                      <div class="col-sm-6 col-md-6 col-lg-6 panelWrapper" ng-repeat="task in req.success">
+                        <div ng-include src="'inline-taskPanel.html'"></div>
+                      </div>
                     </div>
+                    <div class="dropArea canceled bottom" ondrop="columnDrop(event, 'canceled')" ondragover="columnDragOver(event)">
+                      <div class="col-sm-6 col-md-6 col-lg-6 panelWrapper" ng-repeat="task in req.canceled">
+                        <div ng-include src="'inline-taskPanel.html'"></div>
+                      </div>
+                    </div>                    
                   </div>                  
                 </td>                                
               </tr>
             </tbody>
           </table>
         </div>
-        <!--div class="container-fluid">
-            <div class="row reqRow" ng-repeat="req in reqs">
-                <div class="col-md-1">
-                    <div ng-if="req.id != -1">
-                        <h5><a href="/grs/jsf/planning/req/edit_requirement.jsf?entityId={{req.id}}">User Story {{req.id}}</a></h5>
-                        <p>{{req.name}}</p>
-                    </div>
-                </div>
-                <div class="col-md-4 dropArea" ondrop="columnDrop(event, 'open')" ondragover="columnDragOver(event)">
-                  <div class="col-sm-6 col-md-6 col-lg-4 panelWrapper" ng-repeat="task in req.open">
-                    <div ng-include src="'inline-taskPanel.html'"></div>
-                  </div>
-                </div>                
-                <div class="col-md-4 dropArea" ondrop="columnDrop(event, 'in progress')" ondragover="columnDragOver(event)">
-                  <div class="col-sm-6 col-md-6 col-lg-4 panelWrapper" ng-repeat="task in req.inProgress">
-                    <div ng-include src="'inline-taskPanel.html'"></div>
-                  </div>
-                </div>
-                <div class="col-md-3 dropArea" ondrop="columnDrop(event, 'success')" ondragover="columnDragOver(event)">
-                  <div class="col-sm-6 col-md-6 col-lg-4 panelWrapper" ng-repeat="task in req.success">
-                    <div ng-include src="'inline-taskPanel.html'"></div>
-                  </div>
-                </div>
-            </div>
-        </div-->
 
         <!-- ng-templates -->
         <script type="text/ng-template" id="inline-taskPanel.html">
-          <div class="panel {{getPanelClass(task)}}" style="{{getBgrColor(task)}}" id="task_{{task.id}}" ondragstart="taskDragStart(event)" draggable="true">
+          <div class="panel {{getPanelClass(task)}}" id="task_{{task.id}}" ondragstart="taskDragStart(event)" draggable="true">
             <div class="clearfix">
               <div class="pull-left link"><a href="/grs/jsf/planning/task/edit_task.jsf?entityId={{task.id}}"><small>Task {{task.id}}</small></a></div>
               <div class="pull-right">
@@ -271,19 +302,6 @@
                   }).length == 1;
                 };
 
-                $scope.getBgrColor = function(task) {
-                  switch(task.status) {
-                    case "in progress":
-                        return "background: #bce8f1";
-                    case "success":
-                        return "background: #d6e9c6";
-                    case "canceled":
-                        return "#CCCCCC";
-                    default: 
-                      return "#FFEB80"; 
-                  }
-                };
-
                 $scope.getPanelClass = function(task) {
                   switch(task.status) {
                     case "open":
@@ -295,7 +313,7 @@
                     case "canceled":
                         return "panel-warning";
                     default: 
-                      return "#FFEB80"; 
+                      return "panel-default"; 
                   }
                 };
 
