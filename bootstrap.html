@@ -14,7 +14,7 @@
             height: 20px;
             width: 200px;
             background-color: white;
-            background-image: url("/grs/resources/default/5_1_2/css/images/planning/capacity-bar-free.png");
+            background-image: url("/grs/resources/default/5_1_3/css/images/planning/capacity-bar-free.png");
             border: solid 1px #c0c0c0;
             margin-right: 5px;
             text-align: center;
@@ -25,10 +25,10 @@
             float: left;
           } 
           .capacityBar .bar .CAPACITY_BAR_ELAPSED {
-            background-image: url("/grs/resources/default/5_1_2/css/images/planning/capacity-bar-elapsed.png");
+            background-image: url("/grs/resources/default/5_1_3/css/images/planning/capacity-bar-elapsed.png");
           }
           .capacityBar .bar .CAPACITY_BAR_NOT_FINISHED {
-            background-image: url("/grs/resources/default/5_1_2/css/images/planning/capacity-bar-scheduled.png");
+            background-image: url("/grs/resources/default/5_1_3/css/images/planning/capacity-bar-scheduled.png");
           }          
           .capacityBar .bar span {
             display: block;
@@ -45,7 +45,8 @@
           }
           .dropArea {
             min-height: 200px;
-            border: 2px solid transparent;
+            border-right: 2px solid transparent;
+            border-left: 2px solid transparent;
             padding: 5px !important;
           }
           .full {
@@ -74,9 +75,10 @@
             bottom: 2px;
           }          
           .dropArea.active {
-            border: 2px dashed #eee;
+            border-right: 2px dashed #eee;
+            border-left: 2px dashed #eee;
           }
-          .dropArea.active.success {
+          .dropArea.active.completed {
             background: #dff0d8;
             border-color: #d6e9c6;
           }
@@ -139,7 +141,7 @@
           table tbody tr td {
             position: relative;
           }
-          .success .panel {
+          .completed .panel {
             background: #dff0d8;
           }
           .inProgress .panel {
@@ -193,19 +195,13 @@
                     </div>
                   </div>                  
                 </td>
-                <td>
-                  <div class="col-md-12 full">
-                    <div class="dropArea success top" ondrop="columnDrop(event, 'success')" ondragover="columnDragOver(event)">
-                      <div class="col-sm-6 col-md-6 col-lg-6 panelWrapper" ng-repeat="task in req.success">
-                        <div ng-include src="'inline-taskPanel.html'"></div>
-                      </div>
-                    </div>
-                    <div class="dropArea canceled bottom" ondrop="columnDrop(event, 'canceled')" ondragover="columnDragOver(event)">
-                      <div class="col-sm-6 col-md-6 col-lg-6 panelWrapper" ng-repeat="task in req.canceled">
-                        <div ng-include src="'inline-taskPanel.html'"></div>
-                      </div>
-                    </div>                    
-                  </div>                  
+                <td class="dropArea completed" ondrop="columnDrop(event, 'success')" ondragover="columnDragOver(event)">
+                  <div class="col-sm-6 col-md-6 col-lg-6 panelWrapper" ng-repeat="task in req.success">
+                    <div ng-include src="'inline-taskPanel.html'"></div>
+                  </div>
+                  <div class="col-sm-6 col-md-6 col-lg-6 panelWrapper" ng-repeat="task in req.canceled">
+                    <div ng-include src="'inline-taskPanel.html'"></div>
+                  </div>
                 </td>                                
               </tr>
             </tbody>
@@ -323,7 +319,30 @@
             }
 
             var app = angular.module('tbApp', []);
-            app.controller('boardController', ['$scope', '$http', function($scope, $http) {
+            app.factory('boardService', ['$http','$q', function($http, $q){
+              var factory = {};
+
+              factory.getReqs = function(criteria) {
+                return $http.get("/grs/api/v1/requirements", {params: criteria}).
+                  then(function (response) {
+                    return response.data.requirements;
+                  }, function (response) {
+                    return $q.reject(response.data);
+                });
+              };
+
+              factory.getTasks = function(criteria) {
+                return $http.get("/grs/api/v1/tasks", {params: criteria}).
+                  then(function (response) {
+                    return response.data.tasks;
+                  }, function (response) {
+                    return $q.reject(response.data);
+                });
+              };
+
+              return factory;
+            }]);
+            app.controller('boardController', ['$scope', '$http', 'boardService', function($scope, $http, boardService) {
              
                 var queryDict = {};
                 location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]});
@@ -370,15 +389,15 @@
                   }
                 };
 
-                $http.get("/grs/api/v1/tasks?limit=150&iterationIds=" + iterationId).success( function(response) {             
-                    $scope.reqs = [];
-
+                boardService.getTasks({limit: 150, iterationIds: iterationId}).
+                  then(function (data) {
+                    $scope.reqs = new Array();
                     var noreq = { id: -1, open: [], inProgress: [], success: [], canceled: [] };
                     var anyWithoutReq = false;  
-                    var reqIds = "";
+                    var reqIds = new Array();
 
-                    for(var i = 0; i < response.tasks.length; i++) {
-                        var task = response.tasks[i];
+                    for(var i = 0; i < data.length; i++) {
+                        var task = data[i];
 
                         var req = null;
                     
@@ -396,7 +415,7 @@
                         if (req == null) {
                             req = { id: task.relationId, name: "(loading)", open: [], inProgress: [], success: [], canceled: [] };
                             $scope.reqs.push(req);
-                            reqIds = reqIds + req.id + ",";
+                            reqIds.push(req.id);
                         }
                         if (task.status == "open") { req.open.push(task); }
                         if (task.status == "in progress") { req.inProgress.push(task); }
@@ -406,19 +425,26 @@
                     if (anyWithoutReq) {
                         $scope.reqs.push(noreq);
                     }
-
-                    $http.get("/grs/api/v1/requirements?verbose=false&ids=" + reqIds).success( function(reqResponse) {
+                    boardService.getReqs({verbose: false, ids: reqIds.join(",")}).
+                      then(function (data) {
                         for(var i = 0; i < $scope.reqs.length; i++) {
-                            for(var j = 0; j < reqResponse.requirements.length; j++) {
-                                if ($scope.reqs[i].id == reqResponse.requirements[j].id) {
-                                    $scope.reqs[i].name = reqResponse.requirements[j].name;
-                                    $scope.reqs[i].storyPoints = reqResponse.requirements[j].storyPoints;
-                                    $scope.reqs[i].priority = reqResponse.requirements[j].rank;
+                            for(var j = 0; j < data.length; j++) {
+                                if ($scope.reqs[i].id == data[j].id) {
+                                    $scope.reqs[i].name = data[j].name;
+                                    $scope.reqs[i].storyPoints = data[j].storyPoints;
+                                    $scope.reqs[i].priority = data[j].rank;
                                 }
                             } 
-                        } 
-                    });
-                });
+                        }                         
+                      }, function (data) {
+                        //failure
+                      }
+                    );
+                  }, function (data){
+                    //failure
+                  }
+                );
+
             }]);
         </script>    
     </body>
