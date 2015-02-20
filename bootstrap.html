@@ -5,6 +5,12 @@
 
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
         <style type="text/css">
+          body { 
+            padding-top: 70px;
+          }
+          #capacityBar {
+            padding: 15px;
+          }
           .capacityBar {
             height: 22px;
             width: 260px;
@@ -153,9 +159,47 @@
         </style>  
     </head>
     <body id="app" ng-controller="boardController">
+        <nav class="navbar navbar-default navbar-fixed-top">
+          <div class="container-fluid">
+            <div class="navbar-header">
+              <ul class="nav navbar-nav">
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"  
+                    title="Start date: {{activeSprint.startDate}}, End date: {{activeSprint.endDate}}, Project: {{activeSprint.project}}">
+                    {{activeSprint.name}} <span class="caret"></span>
+                  </a>
+                  <ul class="dropdown-menu" role="menu">
+                    <li ng-repeat="sprint in sprints">
+                      <a ng-click="switchActiveSprint(sprint)" href="#"
+                        title="Start date: {{sprint.startDate}}, End date: {{sprint.endDate}}, Project: {{sprint.project}}">{{sprint.name}}</a>
+                    </li>
+                  </ul>
+                </li>
+              </ul>              
+            </div>
+            <div class="collapse navbar-collapse">
+              <ul class="nav navbar-nav">
+                <li><div id="capacityBar"/></li>
+              </ul>              
+              <!--ul class="nav navbar-nav navbar-right">
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                    Dropdown <span class="caret"></span>
+                  </a>
+                  <ul class="dropdown-menu" role="menu">
+                    <li><a href="#">Action</a></li>
+                    <li><a href="#">Another action</a></li>
+                    <li><a href="#">Something else here</a></li>
+                    <li class="divider"></li>
+                    <li><a href="#">Separated link</a></li>
+                  </ul>
+                </li>
+              </ul-->
+            </div>
+          </div>
+        </nav>
         <div class="container-fluid">
           <table class="table table-condensed">
-            <caption><h4><a href="/grs/jsf/planning/iteration/edit_iteration.jsf?entityId={{iterationId}}">Sprint {{iterationId}}</a></h4><div id="capacityBar"/></caption>
             <colgroup>
               <col width="40%"/>
               <col width="40%"/>
@@ -319,7 +363,21 @@
             }
 
             var app = angular.module('tbApp', []);
-            app.factory('boardService', ['$http','$q', function($http, $q){
+            app.factory('storageService', ['$rootScope', function ($rootScope) {
+              var factory = {};
+              factory.SPRINT_KEY = "sprint";
+
+              factory.get = function (key) {
+                var json = localStorage[key];
+                return angular.fromJson(json);
+              };
+              factory.save = function (key, value) {
+                localStorage[key] = angular.toJson(value);
+              };
+
+              return factory;
+            }]);            
+            app.factory('boardService', ['$http','$q', 'storageService', function($http, $q, storageService){
               var factory = {};
 
               factory.getReqs = function(criteria) {
@@ -340,58 +398,83 @@
                 });
               };
 
+              factory.getSprints = function(criteria) {
+                return $http.get("/grs/api/v1/iterations", {params: criteria}).
+                  then(function (response) {
+                    return response.data.iterations;
+                  }, function (response) {
+                    return $q.reject(response.data);
+                });
+              };
+
+              factory.getSprint = function () {
+                return $q(function(resolve, reject) {
+                  var queryDict = {};
+                  location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]});
+                  var sprintId = queryDict['iterationId'];
+                  if (sprintId != null) {
+                    factory.getSprints({ids: sprintId}).
+                      then(function (data) {
+                        storageService.save(storageService.SPRINT_KEY, data[0]);
+                        resolve(data[0]);
+                      }, function (data) {
+                        reject(data);
+                    });                    
+                  } else {
+                    var sprint = storageService.get(storageService.SPRINT_KEY);
+                    if (sprint == null) {
+                      factory.getSprints({completed: false}).
+                        then(function (data) {
+                          storageService.save(storageService.SPRINT_KEY, data[0]);
+                          resolve(data[0]);
+                        }, function (data) {
+                          reject(data);
+                      });
+                    } else {
+                      resolve(sprint);
+                    }
+                  }
+                });
+              };
+
               return factory;
             }]);
-            app.controller('boardController', ['$scope', '$http', 'boardService', function($scope, $http, boardService) {
-             
-                var queryDict = {};
-                location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]});
-                var iterationId = queryDict['iterationId'];
-                $scope.iterationId = iterationId;
+            app.controller('boardController', ['$scope', '$http', 'boardService', 'storageService', function($scope, $http, boardService, storageService) {
+              $scope.activeSprint = null;
+              $scope.sprints = new Array();
+              $scope.reqs = new Array();
 
-                jQuery("#capacityBar").load("/grs/jsf/planning/iteration/edit_iteration.jsf?entityId=" + iterationId + " div.capacityBar");
+              boardService.getSprint().
+                then(function (data) {
+                  $scope.activeSprint = data;
+                  $scope.load(data);
+                }, function(data) {
 
-                $scope.isNotClosed = function(task) { 
-                  return jQuery.grep(["open", "in progress"], function(item) {
-                    return item == task.status;
-                  }).length == 1;
-                };
+              });
 
-                $scope.getPanelClass = function(task) {
-                  switch(task.status) {
-                    case "open":
-                        return "panel-default";
-                    case "in progress":
-                        return "panel-info";
-                    case "success":
-                        return "panel-success";
-                    case "canceled":
-                        return "panel-warning";
-                    default: 
-                      return "panel-default"; 
-                  }
-                };
+              $scope.switchActiveSprint = function (sprint) {
+                $scope.activeSprint = sprint;
+                $scope.sprints = new Array();
+                $scope.reqs = new Array();
 
-                $scope.getPriorityClass = function(task) {
-                  switch(task.priority) {
-                    case "Very high":
-                        return "badge-vh";
-                    case "High":
-                        return "badge-h";
-                    case "Medium":
-                        return "badge-m";
-                    case "Low":
-                        return "badge-l";
-                    case "Very low":
-                        return "badge-vl";
-                    default: 
-                      return "badge-m"; 
-                  }
-                };
+                storageService.save(storageService.SPRINT_KEY, sprint);
 
-                boardService.getTasks({limit: 150, iterationIds: iterationId}).
+                $scope.load(sprint);
+              };
+
+              $scope.load = function(sprint) {
+                jQuery("#capacityBar").html("Loading ...");
+                jQuery("#capacityBar").load("/grs/jsf/planning/iteration/edit_iteration.jsf?entityId=" + sprint.id + " div.capacityBar");
+                
+                boardService.getSprints({completed: false}).
                   then(function (data) {
-                    $scope.reqs = new Array();
+                    $scope.sprints = data;
+                  }, function (data) {
+                    //failure
+                });
+                
+                boardService.getTasks({limit: 150, iterationIds: sprint.id}).
+                  then(function (data) {
                     var noreq = { id: -1, open: [], inProgress: [], success: [], canceled: [] };
                     var anyWithoutReq = false;  
                     var reqIds = new Array();
@@ -443,7 +526,46 @@
                   }, function (data){
                     //failure
                   }
-                );
+                );                
+              };
+
+              $scope.isNotClosed = function(task) { 
+                return jQuery.grep(["open", "in progress"], function(item) {
+                  return item == task.status;
+                }).length == 1;
+              };
+
+              $scope.getPanelClass = function(task) {
+                switch(task.status) {
+                  case "open":
+                      return "panel-default";
+                  case "in progress":
+                      return "panel-info";
+                  case "success":
+                      return "panel-success";
+                  case "canceled":
+                      return "panel-warning";
+                  default: 
+                    return "panel-default"; 
+                }
+              };
+
+              $scope.getPriorityClass = function(task) {
+                switch(task.priority) {
+                  case "Very high":
+                      return "badge-vh";
+                  case "High":
+                      return "badge-h";
+                  case "Medium":
+                      return "badge-m";
+                  case "Low":
+                      return "badge-l";
+                  case "Very low":
+                      return "badge-vl";
+                  default: 
+                    return "badge-m"; 
+                }
+              };
 
             }]);
         </script>    
