@@ -258,8 +258,11 @@
             <div class="clearfix">
               <div class="pull-left link"><a href="/grs/jsf/planning/task/edit_task.jsf?entityId={{task.id}}"><small>Task {{task.id}}</small></a></div>
               <div class="pull-right">
-                  <div ng-repeat="owner in task.owners" class="robot">
-                      <img ng-src="https://robohash.org/{{owner}}?size=35x35" class="face" alt="{{owner}}" title="{{owner}}"/>
+                  <div ng-repeat="owner in task.owners" class="robot dropup">
+                      <img ng-src="https://robohash.org/{{owner}}?size=35x35" class="face dropdown-toggle" id="ownerDropdownMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" alt="{{owner}}" title="{{owner}}"/>
+                      <ul class="dropdown-menu" aria-labelledby="ownerDropdownMenu">
+                          <li ng-repeat="eligibleOwner in owners"><a href="#">{{eligibleOwner}}</a></li>
+                      </ul>
                   </div>
               </div>
             </div>
@@ -478,6 +481,7 @@
                     var noreq = { id: -1, open: [], inProgress: [], success: [], canceled: [] };
                     var anyWithoutReq = false;  
                     var reqIds = new Array();
+                    $scope.owners = new Array();
 
                     for(var i = 0; i < data.length; i++) {
                         var task = data[i];
@@ -504,6 +508,12 @@
                         if (task.status == "in progress") { req.inProgress.push(task); }
                         if (task.status == "success") { req.success.push(task); }
                         if (task.status == "canceled") { req.canceled.push(task); }
+
+                        for(var o = 0; o < task.owners.length; o++) {
+                            if ($scope.owners.indexOf(task.owners[o]) == -1) {
+                                $scope.owners.push(task.owners[o]);
+                            }
+                        }
                     }
                     if (anyWithoutReq) {
                         $scope.reqs.push(noreq);
